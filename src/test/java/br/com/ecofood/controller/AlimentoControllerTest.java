@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.doThrow;
 
 @WebMvcTest(AlimentoController.class)
 class AlimentoControllerTest {
@@ -138,7 +139,7 @@ class AlimentoControllerTest {
 
     @Test
     void deveRetornar404AoExcluirAlimentoInexistente() throws Exception {
-        org.mockito.Mockito.doThrow(new AlimentoNaoEncontradoException("999"))
+        doThrow(new AlimentoNaoEncontradoException("999"))
                 .when(service).excluir("999");
 
         mockMvc.perform(delete("/alimentos/999"))

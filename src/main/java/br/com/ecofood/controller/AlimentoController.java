@@ -1,5 +1,6 @@
 package br.com.ecofood.controller;
 
+import br.com.ecofood.dto.AlimentoRequest;
 import br.com.ecofood.model.Alimento;
 import br.com.ecofood.service.AlimentoService;
 import jakarta.validation.Valid;
@@ -27,8 +28,21 @@ public class AlimentoController {
     }
 
     @PostMapping
-    public ResponseEntity<Alimento> cadastrar(@Valid @RequestBody Alimento alimento) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.cadastrar(alimento));
+    public ResponseEntity<Alimento> cadastrar(
+            @Valid @RequestBody AlimentoRequest request
+    ) {
+        Alimento alimento = new Alimento(
+                null,
+                request.nome(),
+                request.categoria(),
+                request.quantidade(),
+                request.unidade(),
+                request.dataValidade()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(service.cadastrar(alimento));
     }
 
     @GetMapping
@@ -42,7 +56,19 @@ public class AlimentoController {
     }
 
     @PutMapping("/{id}")
-    public Alimento atualizar(@PathVariable String id, @Valid @RequestBody Alimento alimento) {
+    public Alimento atualizar(
+            @PathVariable String id,
+            @Valid @RequestBody AlimentoRequest request
+    ) {
+        Alimento alimento = new Alimento(
+                id,
+                request.nome(),
+                request.categoria(),
+                request.quantidade(),
+                request.unidade(),
+                request.dataValidade()
+        );
+
         return service.atualizar(id, alimento);
     }
 
@@ -52,4 +78,3 @@ public class AlimentoController {
         return ResponseEntity.noContent().build();
     }
 }
-
