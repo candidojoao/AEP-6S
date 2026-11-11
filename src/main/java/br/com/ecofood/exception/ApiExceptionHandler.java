@@ -1,5 +1,6 @@
 package br.com.ecofood.exception;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -14,15 +15,19 @@ import java.util.Map;
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
-    @ExceptionHandler(AlimentoNaoEncontradoException.class)
-    public ResponseEntity<ApiError> tratarNaoEncontrado(AlimentoNaoEncontradoException exception) {
-        ApiError erro = new ApiError(
-                Instant.now(),
-                HttpStatus.NOT_FOUND.value(),
-                exception.getMessage(),
-                Map.of()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(erro);
+    @ExceptionHandler(RecursoNaoEncontradoException.class)
+    public ResponseEntity<ApiError> tratarNaoEncontrado(RecursoNaoEncontradoException exception) {
+        return resposta(HttpStatus.NOT_FOUND, exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(RegraDeNegocioException.class)
+    public ResponseEntity<ApiError> tratarRegraDeNegocio(RegraDeNegocioException exception) {
+        return resposta(HttpStatus.UNPROCESSABLE_ENTITY, exception.getMessage(), Map.of());
+    }
+
+    @ExceptionHandler(DuplicateKeyException.class)
+    public ResponseEntity<ApiError> tratarDuplicidade() {
+        return resposta(HttpStatus.CONFLICT, "Já existe um registro com esses dados", Map.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -31,24 +36,17 @@ public class ApiExceptionHandler {
         exception.getBindingResult().getFieldErrors()
                 .forEach(erro -> campos.putIfAbsent(erro.getField(), erro.getDefaultMessage()));
 
-        ApiError erro = new ApiError(
-                Instant.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                "Dados inválidos",
-                campos
-        );
-        return ResponseEntity.badRequest().body(erro);
+        return resposta(HttpStatus.BAD_REQUEST, "Dados inválidos", campos);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiError> tratarCorpoInvalido() {
-        ApiError erro = new ApiError(
-                Instant.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                "Corpo da requisição inválido",
-                Map.of()
-        );
-        return ResponseEntity.badRequest().body(erro);
+        return resposta(HttpStatus.BAD_REQUEST, "Corpo da requisição inválido", Map.of());
+    }
+
+    private ResponseEntity<ApiError> resposta(HttpStatus status, String mensagem, Map<String, String> campos) {
+        ApiError erro = new ApiError(Instant.now(), status.value(), mensagem, campos);
+        return ResponseEntity.status(status).body(erro);
     }
 
     public record ApiError(

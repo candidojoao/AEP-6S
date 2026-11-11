@@ -3,6 +3,8 @@ package br.com.ecofood.controller;
 import br.com.ecofood.dto.AlimentoRequest;
 import br.com.ecofood.model.Alimento;
 import br.com.ecofood.service.AlimentoService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/alimentos")
+@Tag(name = "Alimentos", description = "Alimentos armazenados")
 public class AlimentoController {
 
     private final AlimentoService service;
@@ -28,51 +31,33 @@ public class AlimentoController {
     }
 
     @PostMapping
-    public ResponseEntity<Alimento> cadastrar(
-            @Valid @RequestBody AlimentoRequest request
-    ) {
-        Alimento alimento = new Alimento(
-                null,
-                request.nome(),
-                request.categoria(),
-                request.quantidade(),
-                request.unidade(),
-                request.dataValidade()
-        );
-
+    @Operation(summary = "Cadastra um alimento")
+    public ResponseEntity<Alimento> cadastrar(@Valid @RequestBody AlimentoRequest request) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(service.cadastrar(alimento));
+                .body(service.cadastrar(request));
     }
 
     @GetMapping
+    @Operation(summary = "Lista os alimentos")
     public List<Alimento> listar() {
         return service.listar();
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Busca um alimento pelo id")
     public Alimento buscarPorId(@PathVariable String id) {
         return service.buscarPorId(id);
     }
 
     @PutMapping("/{id}")
-    public Alimento atualizar(
-            @PathVariable String id,
-            @Valid @RequestBody AlimentoRequest request
-    ) {
-        Alimento alimento = new Alimento(
-                id,
-                request.nome(),
-                request.categoria(),
-                request.quantidade(),
-                request.unidade(),
-                request.dataValidade()
-        );
-
-        return service.atualizar(id, alimento);
+    @Operation(summary = "Atualiza um alimento")
+    public Alimento atualizar(@PathVariable String id, @Valid @RequestBody AlimentoRequest request) {
+        return service.atualizar(id, request);
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Exclui um alimento")
     public ResponseEntity<Void> excluir(@PathVariable String id) {
         service.excluir(id);
         return ResponseEntity.noContent().build();

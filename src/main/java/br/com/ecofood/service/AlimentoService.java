@@ -1,63 +1,33 @@
 package br.com.ecofood.service;
 
+import br.com.ecofood.dto.AlimentoRequest;
 import br.com.ecofood.exception.AlimentoNaoEncontradoException;
+import br.com.ecofood.exception.RecursoNaoEncontradoException;
 import br.com.ecofood.model.Alimento;
 import br.com.ecofood.repository.AlimentoRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
-public class AlimentoService {
+public class AlimentoService extends ServicoCrud<Alimento> {
 
-    private final AlimentoRepository repository;
+    private final AlimentoRepository alimentos;
 
-    public AlimentoService(AlimentoRepository repository) {
-        this.repository = repository;
+    public AlimentoService(AlimentoRepository alimentos) {
+        super(alimentos);
+        this.alimentos = alimentos;
     }
 
-    public Alimento cadastrar(Alimento alimento) {
-        Alimento novoAlimento = new Alimento(
-                null,
-                alimento.nome(),
-                alimento.categoria(),
-                alimento.quantidade(),
-                alimento.unidade(),
-                alimento.dataValidade()
-        );
-        return repository.save(novoAlimento);
+    public Alimento cadastrar(AlimentoRequest request) {
+        return alimentos.save(request.paraAlimento(null));
     }
 
-    public List<Alimento> listar() {
-        return repository.findAll();
+    public Alimento atualizar(String id, AlimentoRequest request) {
+        garantirQueExiste(id);
+        return alimentos.save(request.paraAlimento(id));
     }
 
-    public Alimento buscarPorId(String id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new AlimentoNaoEncontradoException(id));
-    }
-
-    public Alimento atualizar(String id, Alimento alimento) {
-        if (!repository.existsById(id)) {
-            throw new AlimentoNaoEncontradoException(id);
-        }
-
-        Alimento alimentoAtualizado = new Alimento(
-                id,
-                alimento.nome(),
-                alimento.categoria(),
-                alimento.quantidade(),
-                alimento.unidade(),
-                alimento.dataValidade()
-        );
-        return repository.save(alimentoAtualizado);
-    }
-
-    public void excluir(String id) {
-        if (!repository.existsById(id)) {
-            throw new AlimentoNaoEncontradoException(id);
-        }
-        repository.deleteById(id);
+    @Override
+    protected RecursoNaoEncontradoException naoEncontrado(String id) {
+        return new AlimentoNaoEncontradoException(id);
     }
 }
-

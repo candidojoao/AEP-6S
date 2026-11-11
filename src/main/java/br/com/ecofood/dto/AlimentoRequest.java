@@ -1,5 +1,6 @@
 package br.com.ecofood.dto;
 
+import br.com.ecofood.model.Alimento;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,4 +29,8 @@ public record AlimentoRequest(
         @NotNull(message = "A data de validade é obrigatória")
         LocalDate dataValidade
 ) {
+
+    public Alimento paraAlimento(String id) {
+        return new Alimento(id, nome, categoria, quantidade, unidade, dataValidade);
+    }
 }

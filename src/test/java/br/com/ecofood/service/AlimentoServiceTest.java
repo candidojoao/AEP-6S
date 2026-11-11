@@ -1,5 +1,6 @@
 package br.com.ecofood.service;
 
+import br.com.ecofood.dto.AlimentoRequest;
 import br.com.ecofood.exception.AlimentoNaoEncontradoException;
 import br.com.ecofood.model.Alimento;
 import br.com.ecofood.repository.AlimentoRepository;
@@ -17,6 +18,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,27 +30,28 @@ class AlimentoServiceTest {
     private AlimentoRepository repository;
 
     private AlimentoService service;
+    private AlimentoRequest request;
     private Alimento alimento;
 
     @BeforeEach
     void preparar() {
         service = new AlimentoService(repository);
-        alimento = new Alimento(
-                "001",
+        request = new AlimentoRequest(
                 "Arroz",
                 "Grãos",
                 new BigDecimal("5"),
                 "kg",
                 LocalDate.of(2026, 10, 15)
         );
+        alimento = request.paraAlimento("001");
     }
 
     @Test
-    void deveCadastrarAlimentoSemAceitarIdDoCorpo() {
-        when(repository.save(org.mockito.ArgumentMatchers.any(Alimento.class)))
+    void deveCadastrarAlimentoDeixandoOIdParaOBanco() {
+        when(repository.save(any(Alimento.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        Alimento cadastrado = service.cadastrar(alimento);
+        Alimento cadastrado = service.cadastrar(request);
 
         assertNull(cadastrado.id());
         assertEquals("Arroz", cadastrado.nome());
@@ -86,9 +89,8 @@ class AlimentoServiceTest {
     }
 
     @Test
-    void deveAtualizarAlimentoMantendoIdDaUrl() {
-        Alimento novosDados = new Alimento(
-                "id-ignorado",
+    void deveAtualizarAlimentoUsandoOIdDaUrl() {
+        AlimentoRequest novosDados = new AlimentoRequest(
                 "Feijão",
                 "Grãos",
                 new BigDecimal("2.5"),
@@ -96,7 +98,7 @@ class AlimentoServiceTest {
                 LocalDate.of(2026, 12, 1)
         );
         when(repository.existsById("001")).thenReturn(true);
-        when(repository.save(org.mockito.ArgumentMatchers.any(Alimento.class)))
+        when(repository.save(any(Alimento.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
         Alimento atualizado = service.atualizar("001", novosDados);
@@ -112,10 +114,10 @@ class AlimentoServiceTest {
 
         assertThrows(
                 AlimentoNaoEncontradoException.class,
-                () -> service.atualizar("999", alimento)
+                () -> service.atualizar("999", request)
         );
 
-        verify(repository, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(repository, never()).save(any());
     }
 
     @Test
@@ -136,4 +138,3 @@ class AlimentoServiceTest {
         verify(repository, never()).deleteById("999");
     }
 }
-
