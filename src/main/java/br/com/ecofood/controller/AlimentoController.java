@@ -4,6 +4,7 @@ import br.com.ecofood.dto.AlimentoRequest;
 import br.com.ecofood.model.Alimento;
 import br.com.ecofood.service.AlimentoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -39,9 +41,14 @@ public class AlimentoController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista os alimentos")
-    public List<Alimento> listar() {
-        return service.listar();
+    @Operation(summary = "Lista os alimentos, opcionalmente só os de uma residência (ordenados pela validade)")
+    public List<Alimento> listar(
+            @Parameter(description = "Id da residência") @RequestParam(required = false) String residenciaId
+    ) {
+        if (residenciaId == null || residenciaId.isBlank()) {
+            return service.listar();
+        }
+        return service.listarPorResidencia(residenciaId);
     }
 
     @GetMapping("/{id}")

@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Document(collection = "residencias")
 public class Residencia {
@@ -36,7 +37,13 @@ public class Residencia {
     }
 
     public boolean possuiLocal(String nomeDoLocal) {
-        return locais.stream().anyMatch(local -> local.temNome(nomeDoLocal));
+        return buscarLocal(nomeDoLocal).isPresent();
+    }
+
+    public Optional<LocalArmazenamento> buscarLocal(String nomeDoLocal) {
+        return locais.stream()
+                .filter(local -> local.temNome(nomeDoLocal))
+                .findFirst();
     }
 
     public void adicionarLocal(LocalArmazenamento local) {

@@ -4,6 +4,7 @@ import br.com.ecofood.dto.CategoriaRequest;
 import br.com.ecofood.exception.CategoriaNaoEncontradaException;
 import br.com.ecofood.exception.RegraDeNegocioException;
 import br.com.ecofood.model.Categoria;
+import br.com.ecofood.repository.AlimentoRepository;
 import br.com.ecofood.repository.CategoriaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,12 +29,15 @@ class CategoriaServiceTest {
     @Mock
     private CategoriaRepository repository;
 
+    @Mock
+    private AlimentoRepository alimentos;
+
     private CategoriaService service;
     private CategoriaRequest request;
 
     @BeforeEach
     void preparar() {
-        service = new CategoriaService(repository);
+        service = new CategoriaService(repository, alimentos);
         request = new CategoriaRequest("  Laticínios ", 3, List.of("Manter refrigerado"));
     }
 
@@ -94,6 +98,28 @@ class CategoriaServiceTest {
         when(repository.existsById("999")).thenReturn(false);
 
         assertThrows(CategoriaNaoEncontradaException.class, () -> service.atualizar("999", request));
+    }
+
+    @Test
+    void naoDeveExcluirCategoriaEmUso() {
+        when(repository.existsById("c1")).thenReturn(true);
+        when(alimentos.existsByCategoriaId("c1")).thenReturn(true);
+
+        RegraDeNegocioException erro =
+                assertThrows(RegraDeNegocioException.class, () -> service.excluir("c1"));
+
+        assertEquals("A categoria está em uso por alimentos e não pode ser excluída", erro.getMessage());
+        verify(repository, never()).deleteById(any());
+    }
+
+    @Test
+    void deveExcluirCategoriaSemAlimentos() {
+        when(repository.existsById("c1")).thenReturn(true);
+        when(alimentos.existsByCategoriaId("c1")).thenReturn(false);
+
+        service.excluir("c1");
+
+        verify(repository).deleteById("c1");
     }
 
     @Test

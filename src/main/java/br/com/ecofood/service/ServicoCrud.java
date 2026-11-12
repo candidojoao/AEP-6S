@@ -24,7 +24,11 @@ public abstract class ServicoCrud<T> {
 
     public void excluir(String id) {
         garantirQueExiste(id);
+        antesDeExcluir(id);
         repositorio.deleteById(id);
+    }
+
+    protected void antesDeExcluir(String id) {
     }
 
     protected void garantirQueExiste(String id) {

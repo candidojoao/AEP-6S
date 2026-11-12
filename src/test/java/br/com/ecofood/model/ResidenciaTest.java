@@ -37,6 +37,14 @@ class ResidenciaTest {
     }
 
     @Test
+    void deveDevolverOLocalComONomeCadastrado() {
+        Residencia residencia = residenciaComGeladeira();
+
+        assertEquals("Geladeira", residencia.buscarLocal(" geladeira ").orElseThrow().nome());
+        assertTrue(residencia.buscarLocal("Varanda").isEmpty());
+    }
+
+    @Test
     void naoDeveCriarResidenciaComLocaisRepetidos() {
         List<LocalArmazenamento> locaisRepetidos = List.of(
                 new LocalArmazenamento("Geladeira", TipoLocal.REFRIGERADO),

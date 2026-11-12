@@ -12,8 +12,14 @@ public record AlimentoRequest(
         @NotBlank(message = "O nome é obrigatório")
         String nome,
 
-        @NotBlank(message = "A categoria é obrigatória")
-        String categoria,
+        @NotBlank(message = "Informe a residência")
+        String residenciaId,
+
+        @NotBlank(message = "Informe a categoria")
+        String categoriaId,
+
+        @NotBlank(message = "Informe o local de armazenamento")
+        String local,
 
         @NotNull(message = "A quantidade é obrigatória")
         @DecimalMin(
@@ -30,7 +36,7 @@ public record AlimentoRequest(
         LocalDate dataValidade
 ) {
 
-    public Alimento paraAlimento(String id) {
-        return new Alimento(id, nome, categoria, quantidade, unidade, dataValidade);
+    public Alimento paraAlimento(String localDaResidencia) {
+        return new Alimento(nome, residenciaId, categoriaId, localDaResidencia, quantidade, unidade, dataValidade);
     }
 }
