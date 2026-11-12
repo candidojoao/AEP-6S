@@ -13,9 +13,9 @@
 
     <groupId>br.com.ecofood</groupId>
     <artifactId>ecofood</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>2.0.0</version>
     <name>EcoFood</name>
-    <description>API para controle de alimentos armazenados</description>
+    <description>API para controle de alimentos armazenados nas residências e redução do desperdício</description>
 
     <properties>
         <java.version>21</java.version>
