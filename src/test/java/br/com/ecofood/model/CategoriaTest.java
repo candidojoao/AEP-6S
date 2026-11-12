@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,6 +20,16 @@ class CategoriaTest {
         assertEquals("Laticínios", categoria.getNome());
         assertEquals(3, categoria.getDiasAlertaValidade());
         assertEquals(List.of("Manter refrigerado"), categoria.getDicasConservacao());
+    }
+
+    @Test
+    void deveAlertarQuandoFaltamAteOsDiasDaCategoria() {
+        Categoria laticinios = new Categoria("c1", "Laticínios", 3, null);
+
+        assertTrue(laticinios.deveAlertar(3));
+        assertTrue(laticinios.deveAlertar(0));
+        assertTrue(laticinios.deveAlertar(-5));
+        assertFalse(laticinios.deveAlertar(4));
     }
 
     @Test

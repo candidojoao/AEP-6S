@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -68,6 +69,22 @@ class AlimentoTest {
         assertEquals("Quantidade maior que o estoque disponível: 2 L", erro.getMessage());
         assertEquals(new BigDecimal("2"), leite.getQuantidade());
         assertTrue(leite.getMovimentacoes().isEmpty());
+    }
+
+    @Test
+    void deveContarOsDiasQueFaltamParaVencer() {
+        assertEquals(10, leite.diasParaVencer(HOJE));
+        assertEquals(0, leite.diasParaVencer(LocalDate.of(2026, 11, 20)));
+        assertEquals(-2, leite.diasParaVencer(LocalDate.of(2026, 11, 22)));
+    }
+
+    @Test
+    void deveSaberSeAindaTemEstoque() {
+        assertTrue(leite.temEstoque());
+
+        leite.registrarMovimentacao(movimentacao(TipoMovimentacao.CONSUMO, "2"));
+
+        assertFalse(leite.temEstoque());
     }
 
     @Test

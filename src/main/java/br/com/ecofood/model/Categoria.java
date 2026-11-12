@@ -25,6 +25,10 @@ public class Categoria {
         this.dicasConservacao = dicasConservacao == null ? List.of() : List.copyOf(dicasConservacao);
     }
 
+    public boolean deveAlertar(long diasParaVencer) {
+        return diasParaVencer <= diasAlertaValidade;
+    }
+
     public String getId() {
         return id;
     }

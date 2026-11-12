@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.mapping.FieldType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -69,6 +70,14 @@ public class Alimento {
         }
         quantidade = movimentacao.tipo().aplicarEm(quantidade, movimentacao.quantidade());
         movimentacoes.add(movimentacao);
+    }
+
+    public long diasParaVencer(LocalDate hoje) {
+        return ChronoUnit.DAYS.between(hoje, dataValidade);
+    }
+
+    public boolean temEstoque() {
+        return quantidade.signum() > 0;
     }
 
     public String getId() {
