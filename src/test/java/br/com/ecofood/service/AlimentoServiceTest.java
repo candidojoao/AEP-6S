@@ -1,6 +1,7 @@
 package br.com.ecofood.service;
 
 import br.com.ecofood.dto.AlimentoRequest;
+import br.com.ecofood.dto.MovimentacaoRequest;
 import br.com.ecofood.exception.AlimentoNaoEncontradoException;
 import br.com.ecofood.exception.CategoriaNaoEncontradaException;
 import br.com.ecofood.exception.RegraDeNegocioException;
@@ -9,8 +10,10 @@ import br.com.ecofood.model.Alimento;
 import br.com.ecofood.model.Categoria;
 import br.com.ecofood.model.Endereco;
 import br.com.ecofood.model.LocalArmazenamento;
+import br.com.ecofood.model.Movimentacao;
 import br.com.ecofood.model.Residencia;
 import br.com.ecofood.model.TipoLocal;
+import br.com.ecofood.model.TipoMovimentacao;
 import br.com.ecofood.repository.AlimentoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +23,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +41,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AlimentoServiceTest {
 
+    private static final Clock RELOGIO = Clock.fixed(
+            Instant.parse("2026-11-10T15:00:00Z"), ZoneId.of("America/Sao_Paulo"));
+
     @Mock
     private AlimentoRepository repository;
 
@@ -48,7 +57,7 @@ class AlimentoServiceTest {
 
     @BeforeEach
     void preparar() {
-        service = new AlimentoService(repository, residencias, categorias);
+        service = new AlimentoService(repository, residencias, categorias, RELOGIO);
     }
 
     private AlimentoRequest request(String local) {
@@ -156,6 +165,76 @@ class AlimentoServiceTest {
         assertEquals("Leite integral", atualizado.getNome());
         assertEquals(new BigDecimal("1"), atualizado.getQuantidade());
         assertEquals(LocalDate.of(2026, 11, 25), atualizado.getDataValidade());
+    }
+
+    @Test
+    void deveManterOHistoricoAoAtualizar() {
+        Alimento salvo = alimentoSalvo("a1");
+        salvo.registrarMovimentacao(new Movimentacao(
+                TipoMovimentacao.CONSUMO, BigDecimal.ONE, LocalDate.of(2026, 11, 9), null));
+        when(repository.findById("a1")).thenReturn(Optional.of(salvo));
+        referenciasExistem();
+        salvarDevolvendoOMesmoObjeto();
+
+        Alimento atualizado = service.atualizar("a1", request("Geladeira"));
+
+        assertEquals(1, atualizado.getMovimentacoes().size());
+    }
+
+    @Test
+    void deveRegistrarMovimentacaoComADataDeHojeQuandoNaoInformada() {
+        when(repository.findById("a1")).thenReturn(Optional.of(alimentoSalvo("a1")));
+        salvarDevolvendoOMesmoObjeto();
+
+        Alimento atualizado = service.registrarMovimentacao(
+                "a1", new MovimentacaoRequest(TipoMovimentacao.CONSUMO, new BigDecimal("0.5"), null, "Café da manhã"));
+
+        assertEquals(new BigDecimal("1.5"), atualizado.getQuantidade());
+        Movimentacao registrada = atualizado.getMovimentacoes().get(0);
+        assertEquals(LocalDate.of(2026, 11, 10), registrada.data());
+        assertEquals("Café da manhã", registrada.observacao());
+    }
+
+    @Test
+    void deveRespeitarADataInformadaNaMovimentacao() {
+        when(repository.findById("a1")).thenReturn(Optional.of(alimentoSalvo("a1")));
+        salvarDevolvendoOMesmoObjeto();
+        LocalDate ontem = LocalDate.of(2026, 11, 9);
+
+        Alimento atualizado = service.registrarMovimentacao(
+                "a1", new MovimentacaoRequest(TipoMovimentacao.DESCARTE, BigDecimal.ONE, ontem, null));
+
+        assertEquals(ontem, atualizado.getMovimentacoes().get(0).data());
+    }
+
+    @Test
+    void naoDeveSalvarMovimentacaoMaiorQueOEstoque() {
+        when(repository.findById("a1")).thenReturn(Optional.of(alimentoSalvo("a1")));
+        MovimentacaoRequest demais = new MovimentacaoRequest(TipoMovimentacao.DOACAO, BigDecimal.TEN, null, null);
+
+        assertThrows(RegraDeNegocioException.class, () -> service.registrarMovimentacao("a1", demais));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void naoDeveRegistrarMovimentacaoEmAlimentoInexistente() {
+        when(repository.findById("999")).thenReturn(Optional.empty());
+        MovimentacaoRequest consumo = new MovimentacaoRequest(TipoMovimentacao.CONSUMO, BigDecimal.ONE, null, null);
+
+        assertThrows(AlimentoNaoEncontradoException.class, () -> service.registrarMovimentacao("999", consumo));
+    }
+
+    @Test
+    void deveListarAsMovimentacoesDoAlimento() {
+        Alimento salvo = alimentoSalvo("a1");
+        salvo.registrarMovimentacao(new Movimentacao(
+                TipoMovimentacao.REPOSICAO, BigDecimal.ONE, LocalDate.of(2026, 11, 9), null));
+        when(repository.findById("a1")).thenReturn(Optional.of(salvo));
+
+        List<Movimentacao> historico = service.listarMovimentacoes("a1");
+
+        assertEquals(1, historico.size());
+        assertEquals(TipoMovimentacao.REPOSICAO, historico.get(0).tipo());
     }
 
     @Test

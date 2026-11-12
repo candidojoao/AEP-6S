@@ -1,5 +1,6 @@
 package br.com.ecofood.model;
 
+import br.com.ecofood.exception.RegraDeNegocioException;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -10,6 +11,9 @@ import org.springframework.data.mongodb.core.mapping.FieldType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Document(collection = "alimentos")
 @CompoundIndex(name = "residencia_validade", def = "{'residenciaId': 1, 'dataValidade': 1}")
@@ -28,6 +32,7 @@ public class Alimento {
     private BigDecimal quantidade;
     private String unidade;
     private LocalDate dataValidade;
+    private List<Movimentacao> movimentacoes = new ArrayList<>();
 
     public Alimento(
             String nome,
@@ -55,6 +60,15 @@ public class Alimento {
         quantidade = dados.quantidade;
         unidade = dados.unidade;
         dataValidade = dados.dataValidade;
+    }
+
+    public void registrarMovimentacao(Movimentacao movimentacao) {
+        if (movimentacao.tipo().isSaida() && movimentacao.quantidade().compareTo(quantidade) > 0) {
+            throw new RegraDeNegocioException("Quantidade maior que o estoque disponível: "
+                    + quantidade.stripTrailingZeros().toPlainString() + " " + unidade);
+        }
+        quantidade = movimentacao.tipo().aplicarEm(quantidade, movimentacao.quantidade());
+        movimentacoes.add(movimentacao);
     }
 
     public String getId() {
@@ -87,5 +101,9 @@ public class Alimento {
 
     public LocalDate getDataValidade() {
         return dataValidade;
+    }
+
+    public List<Movimentacao> getMovimentacoes() {
+        return Collections.unmodifiableList(movimentacoes);
     }
 }

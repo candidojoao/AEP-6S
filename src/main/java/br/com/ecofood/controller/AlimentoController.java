@@ -1,7 +1,9 @@
 package br.com.ecofood.controller;
 
 import br.com.ecofood.dto.AlimentoRequest;
+import br.com.ecofood.dto.MovimentacaoRequest;
 import br.com.ecofood.model.Alimento;
+import br.com.ecofood.model.Movimentacao;
 import br.com.ecofood.service.AlimentoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -68,5 +70,22 @@ public class AlimentoController {
     public ResponseEntity<Void> excluir(@PathVariable String id) {
         service.excluir(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/movimentacoes")
+    @Operation(summary = "Registra consumo, descarte, doação ou reposição e atualiza o estoque")
+    public ResponseEntity<Alimento> registrarMovimentacao(
+            @PathVariable String id,
+            @Valid @RequestBody MovimentacaoRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(service.registrarMovimentacao(id, request));
+    }
+
+    @GetMapping("/{id}/movimentacoes")
+    @Operation(summary = "Lista o histórico de movimentações do alimento")
+    public List<Movimentacao> listarMovimentacoes(@PathVariable String id) {
+        return service.listarMovimentacoes(id);
     }
 }

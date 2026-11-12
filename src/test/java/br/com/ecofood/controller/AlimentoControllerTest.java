@@ -3,6 +3,8 @@ package br.com.ecofood.controller;
 import br.com.ecofood.exception.AlimentoNaoEncontradoException;
 import br.com.ecofood.exception.RegraDeNegocioException;
 import br.com.ecofood.model.Alimento;
+import br.com.ecofood.model.Movimentacao;
+import br.com.ecofood.model.TipoMovimentacao;
 import br.com.ecofood.service.AlimentoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -188,6 +190,75 @@ class AlimentoControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(service).excluir("001");
+    }
+
+    @Test
+    void deveRegistrarMovimentacao() throws Exception {
+        Alimento comConsumo = alimento();
+        comConsumo.registrarMovimentacao(new Movimentacao(
+                TipoMovimentacao.CONSUMO, new BigDecimal("0.5"), LocalDate.of(2026, 11, 10), "Café"));
+        when(service.registrarMovimentacao(eq("001"), any())).thenReturn(comConsumo);
+
+        mockMvc.perform(post("/alimentos/001/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "tipo": "CONSUMO", "quantidade": 0.5, "observacao": "Café" }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.quantidade").value(1.5))
+                .andExpect(jsonPath("$.movimentacoes[0].tipo").value("CONSUMO"))
+                .andExpect(jsonPath("$.movimentacoes[0].data").value("2026-11-10"));
+    }
+
+    @Test
+    void deveRejeitarMovimentacaoInvalida() throws Exception {
+        mockMvc.perform(post("/alimentos/001/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "quantidade": 0, "data": "2999-01-01" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos.tipo").value("Informe o tipo da movimentação"))
+                .andExpect(jsonPath("$.campos.quantidade").exists())
+                .andExpect(jsonPath("$.campos.data").value("A data não pode estar no futuro"));
+
+        verify(service, never()).registrarMovimentacao(any(), any());
+    }
+
+    @Test
+    void deveRejeitarTipoDeMovimentacaoDesconhecido() throws Exception {
+        mockMvc.perform(post("/alimentos/001/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "tipo": "ROUBO", "quantidade": 1 }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").value("Corpo da requisição inválido"));
+    }
+
+    @Test
+    void deveRetornar422QuandoASaidaPassaDoEstoque() throws Exception {
+        when(service.registrarMovimentacao(eq("001"), any()))
+                .thenThrow(new RegraDeNegocioException("Quantidade maior que o estoque disponível: 2 L"));
+
+        mockMvc.perform(post("/alimentos/001/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "tipo": "DESCARTE", "quantidade": 5 }
+                                """))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.mensagem").value("Quantidade maior que o estoque disponível: 2 L"));
+    }
+
+    @Test
+    void deveListarAsMovimentacoes() throws Exception {
+        when(service.listarMovimentacoes("001")).thenReturn(List.of(new Movimentacao(
+                TipoMovimentacao.DOACAO, BigDecimal.ONE, LocalDate.of(2026, 11, 10), "Vizinha")));
+
+        mockMvc.perform(get("/alimentos/001/movimentacoes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].tipo").value("DOACAO"))
+                .andExpect(jsonPath("$[0].observacao").value("Vizinha"));
     }
 
     @Test
